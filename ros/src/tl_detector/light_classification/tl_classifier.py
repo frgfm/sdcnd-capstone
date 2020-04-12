@@ -59,5 +59,38 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        if self.detection_graph is not None:
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            (im_width, im_height, _) = image_rgb.shape
+            image_np = np.expand_dims(image_rgb, axis=0)
+
+            # Actual detection.
+            with self.detection_graph.as_default():
+                (boxes, scores, classes, num) = self.sess.run(
+                    [self.detection_boxes, self.detection_scores,
+                     self.detection_classes, self.num_detections],
+                    feed_dict={self.image_tensor: image_np})
+
+            boxes = np.squeeze(boxes)
+            scores = np.squeeze(scores)
+            classes = np.squeeze(classes).astype(np.int32)
+
+            min_score_thresh = .5
+            count = 0
+            count1 = 0
+
+            for i in range(boxes.shape[0]):
+                if scores is None or scores[i] > min_score_thresh:
+                    count1 += 1
+                    class_name = self.category_index[classes[i]]['name']
+
+                    # Traffic light thing
+                    if class_name == 'Red':
+                        count += 1
+
+            if count < count1 - count:
+                self.current_light = TrafficLight.GREEN
+            else:
+                self.current_light = TrafficLight.RED
+
+        return self.current_light
