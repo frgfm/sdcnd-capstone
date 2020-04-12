@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import rospy
+import numpy as np
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
@@ -25,6 +27,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 # Number of waypoints we will publish. You can change this number
 LOOKAHEAD_WPS = 200
+# Maximum deceleration for vehicle.
+MAX_DECEL = 0.5
 
 
 class WaypointUpdater(object):
@@ -54,10 +58,10 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_lane:
                 # Get closest waypoint
-                self.publish_waypoints(closest_waypoint_idx)
+                self.publish_waypoints()
             rate.sleep()
 
-    def get_closest_waypoint_id(self):
+    def get_closest_waypoint_idx(self):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
@@ -135,13 +139,14 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
+    @staticmethod
     def cartesian_dist3d(a, b):
         return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
         for i in range(wp1, wp2 + 1):
-            dist += cartesian_dist3d(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            dist += self.cartesian_dist3d(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
