@@ -1,5 +1,6 @@
 from styx_msgs.msg import TrafficLight
 
+
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
