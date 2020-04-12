@@ -25,9 +25,9 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 # Number of waypoints we will publish. You can change this number
-LOOKAHEAD_WPS = 200
+LOOKAHEAD_WPS = 50
 # Maximum deceleration for vehicle.
-MAX_DECEL = 0.5
+MAX_DECEL = 0.3
 
 
 class WaypointUpdater(object):
