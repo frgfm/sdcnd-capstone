@@ -18,9 +18,11 @@ RUN apt-get upgrade -y
 # install python packages
 RUN apt-get install -y python-pip
 COPY requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
-# Pillow fix
-RUN pip install pillow==6.2.1
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    # Pillow fix
+    pip install pillow==6.2.1 && \
+    pip install --upgrade mock
 
 # install required ros dependencies
 RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
