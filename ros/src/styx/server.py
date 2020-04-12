@@ -46,7 +46,7 @@ def obstacle(sid, data):
     bridge.publish_obstacles(data)
 
 
-@sio.on('lidar')
+@sio.on('lidar')  # noqa: F811
 def obstacle(sid, data):
     bridge.publish_lidar(data)
 
