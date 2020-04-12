@@ -9,12 +9,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build the Docker image
         run: docker build . -t capstone
-      - name: Run the container
-        run: |
-          docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
-          catkin_make
-          source devel/setup.sh
-          roslaunch launch/styx.launch
 
   flake8-py3:
     runs-on: ubuntu-latest
