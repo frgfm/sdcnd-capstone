@@ -108,9 +108,7 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        closest_idx = self.waypoint_tree.query([x, y], 1)[1]
-        return closest_idx
+        return self.waypoint_tree.query([x, y], 1)[1]
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -142,7 +140,8 @@ class TLDetector(object):
 
         """
         closest_light = None
-        line_wp_idx = None
+        line_wp_idx = -1
+        state = TrafficLight.UNKNOWN
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
@@ -163,9 +162,7 @@ class TLDetector(object):
         #TODO find the closest visible traffic light (if one exists)
         if closest_light:
             state = self.get_light_state(closest_light)
-            return line_wp_idx, state
-        else:
-            return -1, TrafficLight.UNKNOWN
+        return line_wp_idx, state
 
 
 if __name__ == '__main__':
