@@ -157,8 +157,9 @@ class TLDetector(object):
         #TODO find the closest visible traffic light (if one exists)
         if closest_light:
             state = self.get_light_state(closest_light)
-            return light_wp_idx, state
-        return -1, TrafficLight.UNKNOWN
+            return line_wp_idx, state
+        else:
+            return -1, TrafficLight.UNKNOWN
 
 
 if __name__ == '__main__':
