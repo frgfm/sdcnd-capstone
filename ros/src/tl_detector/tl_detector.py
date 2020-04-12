@@ -13,6 +13,7 @@ import yaml
 
 STATE_COUNT_THRESHOLD = 3
 
+
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
@@ -158,6 +159,7 @@ class TLDetector(object):
             state = self.get_light_state(closest_light)
             return light_wp_idx, state
         return -1, TrafficLight.UNKNOWN
+
 
 if __name__ == '__main__':
     try:

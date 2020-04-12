@@ -58,7 +58,7 @@ class WaypointLoader(object):
 
     def distance(self, p1, p2):
         x, y, z = p1.x - p2.x, p1.y - p2.y, p1.z - p2.z
-        return math.sqrt(x*x + y*y + z*z)
+        return math.sqrt(x ** 2 + y ** 2 + z ** 2)
 
     def decelerate(self, waypoints):
         last = waypoints[-1]
