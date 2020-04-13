@@ -33,7 +33,7 @@ class TLClassifier(object):
         if not os.path.exists(model_path):
             try:
                 urllib.urlretrieve(MODEL_URL, model_path)
-            except Exception as e:
+            except Exception:
                 rospy.logwarn("Unable to download model from: {}".format(MODEL_URL))
         if os.path.exists(model_path):
 
