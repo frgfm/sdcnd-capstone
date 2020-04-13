@@ -6,6 +6,7 @@ import os
 import cv2
 import numpy as np
 import rospy
+import urllib
 import tensorflow as tf
 from styx_msgs.msg import TrafficLight
 
@@ -13,6 +14,7 @@ from styx_msgs.msg import TrafficLight
 LIGHTS = ['Red', 'Yellow', 'Green', 'Unknown', 'Unknown']
 COLORS = [(0, 0, 255), (0, 165, 255), (0, 255, 0), (255, 0, 0), (255, 0, 0)]
 # Model output classes
+MODEL_URL = 'https://github.com/frgfm/sdcnd-capstone/releases/download/v0.1.0/faster_rcnn_resnet50_coco_finetuned.pb'
 MODEL_PATH = 'faster_rcnn_resnet50_coco_finetuned.pb'
 CLASSES = [TrafficLight.GREEN, TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.UNKNOWN]
 SAVE_RESULT = False
@@ -26,6 +28,13 @@ class TLClassifier(object):
 
         model_path = os.path.join(cwd, MODEL_PATH)
         self.detection_graph = None
+
+        # Try to download the model
+        if not os.path.exists(model_path):
+            try:
+                urllib.urlretrieve(MODEL_URL, model_path)
+            except Exception as e:
+                rospy.logwarn("Unable to download model from: {}".format(MODEL_URL))
         if os.path.exists(model_path):
 
             # load frozen tensorflow model
