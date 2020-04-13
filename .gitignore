@@ -128,3 +128,6 @@ dmypy.json
 
 # ROS
 ros/devel/
+
+# Tensorflow checkpoints
+*.pb
