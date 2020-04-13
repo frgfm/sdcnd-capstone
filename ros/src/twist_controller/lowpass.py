@@ -10,7 +10,7 @@ class LowPassFilter(object):
     def get(self):
         return self.last_val
 
-    def fill(self, val):
+    def filt(self, val):
         if self.ready:
             val = self.a * val + self.b * self.last_val
         else:
