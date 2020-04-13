@@ -1,9 +1,21 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
 import os
 import cv2
 import numpy as np
 import rospy
 import tensorflow as tf
 from styx_msgs.msg import TrafficLight
+
+# cf styx_msgs/msg/TrafficLight.msg
+LIGHTS = ['Red', 'Yellow', 'Green', 'Unknown', 'Unknown']
+COLORS = [(0, 0, 255), (0, 165, 255), (0, 255, 0), (255, 0, 0), (255, 0, 0)]
+# Model output classes
+MODEL_PATH = 'faster_rcnn_resnet50_coco_finetuned.pb'
+CLASSES = [TrafficLight.GREEN, TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.UNKNOWN]
+SAVE_RESULT = False
 
 
 class TLClassifier(object):
@@ -12,22 +24,13 @@ class TLClassifier(object):
 
         cwd = os.path.dirname(os.path.realpath(__file__))
 
-        model_path = os.path.join(cwd, './sim.pb')
+        model_path = os.path.join(cwd, MODEL_PATH)
         self.detection_graph = None
         if os.path.exists(model_path):
-            rospy.logwarn("model_path={}".format(model_path))
 
             # load frozen tensorflow model
             self.detection_graph = tf.Graph()
-            with self.detection_graph.as_default():
-                od_graph_def = tf.GraphDef()
-                with tf.gfile.GFile(model_path, 'rb') as fid:
-                    serialized_graph = fid.read()
-                    od_graph_def.ParseFromString(serialized_graph)
-                    tf.import_graph_def(od_graph_def, name='')
-
-            self.category_index = {1: {'id': 1, 'name': 'Green'}, 2: {'id': 2, 'name': 'Red'},
-                                   3: {'id': 3, 'name': 'Yellow'}, 4: {'id': 4, 'name': 'off'}}
+            self._load_model(model_path)
 
             # create tensorflow session for detection
             config = tf.ConfigProto()
@@ -46,8 +49,36 @@ class TLClassifier(object):
             self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
             self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
             self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
+            self.img_cnt = 0
+            rospy.loginfo("TensorFlow model loaded: {}".format(model_path))
         else:
             rospy.logwarn("Unable to access model at {}".format(model_path))
+
+    def _load_model(self, model_path):
+        with self.detection_graph.as_default():
+            od_graph_def = tf.GraphDef()
+            with tf.gfile.GFile(model_path, 'rb') as fid:
+                serialized_graph = fid.read()
+                od_graph_def.ParseFromString(serialized_graph)
+                tf.import_graph_def(od_graph_def, name='')
+
+    @staticmethod
+    def render(image, rel_boxes, classes, scores):
+
+        # Convert relatives coordinates to image coordinates
+        boxes = rel_boxes
+        boxes[:, [0, 2]] *= image.shape[0]
+        boxes[:, [1, 3]] *= image.shape[1]
+
+        for box, class_idx, score in zip(boxes, classes, scores):
+            top, left, bot, right = box
+            # Color based on detection result
+            color = COLORS[CLASSES[int(class_idx) - 1]]
+            cv2.rectangle(image, (left, top), (right, bot), color, 3)
+            label = "{}: {:.2%}".format(LIGHTS[CLASSES[int(class_idx) - 1]], score)
+            cv2.putText(image, label, (left, int(top - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 1, cv2.LINE_AA)
+
+        return image
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -60,9 +91,7 @@ class TLClassifier(object):
 
         """
         if self.detection_graph is not None:
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            (im_width, im_height, _) = image_rgb.shape
-            image_np = np.expand_dims(image_rgb, axis=0)
+            image_np = np.expand_dims(image[..., [2, 1, 0]], axis=0)
 
             # Actual detection.
             with self.detection_graph.as_default():
@@ -76,21 +105,18 @@ class TLClassifier(object):
             classes = np.squeeze(classes).astype(np.int32)
 
             min_score_thresh = .5
-            count = 0
-            count1 = 0
+            is_kept = [idx for idx, score in enumerate(scores) if score >= min_score_thresh]
+            boxes, scores, classes = boxes[is_kept, ...], scores[is_kept, ...], classes[is_kept, ...]
+            self.current_light = CLASSES[-1]
+            if len(scores) > 0:
+                # Output class index are indexed from 1
+                self.current_light = CLASSES[int(classes[np.argmax(scores)] - 1)]
 
-            for i in range(boxes.shape[0]):
-                if scores is None or scores[i] > min_score_thresh:
-                    count1 += 1
-                    class_name = self.category_index[classes[i]]['name']
-
-                    # Traffic light thing
-                    if class_name == 'Red':
-                        count += 1
-
-            if count < count1 - count:
-                self.current_light = TrafficLight.GREEN
-            else:
-                self.current_light = TrafficLight.RED
+            # Write image to disk
+            if SAVE_RESULT:
+                self.img_cnt += 1
+                folder = '/home/workspace/CarND-Capstone/imgs/'
+                processed_img = self.render(image, boxes, classes, scores)
+                cv2.imwrite(folder + 'processed_img_{}.jpg'.format(self.img_cnt), processed_img)
 
         return self.current_light
